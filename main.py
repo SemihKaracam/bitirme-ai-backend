@@ -23,7 +23,8 @@ from PIL import Image
 
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+CORS(app, resources={r"/*": {"origins": "https://bitirme-projesi-deploy.netlify.app/"}})
 
 
 # def read_tensor_from_image_url(url,
