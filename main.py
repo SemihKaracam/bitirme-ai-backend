@@ -24,7 +24,7 @@ from PIL import Image
 
 app = Flask(__name__)
 # Tüm domainlere izin ver, preflight isteklerine otomatik cevap ver
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=False)
+CORS(app, origins=["https://bitirme-projesi-deploy.netlify.app"])
 
 # def read_tensor_from_image_url(url,
 #                                 input_height=299,
