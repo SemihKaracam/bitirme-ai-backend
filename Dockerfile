@@ -1,6 +1,11 @@
 # Base image
 FROM python:3.9-slim
 
+# OpenCV için gerekli kütüphaneler
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/*
 
 # Çalışma dizini
 WORKDIR /yapayzeka
@@ -14,10 +19,6 @@ COPY . .
 
 # Varsayılan çalıştırma komutu
 CMD ["python", "main.py"]
-
-
-
-
 
 
 
