@@ -40,6 +40,10 @@ CORS(app, origins=["https://bitirme-projesi-deploy.netlify.app"])
 #     image = tf.expand_dims(image, axis=0)  # Tek bir örneği modelin beklediği şekilde boyutlandırma
 #     print("image:",image)
 #     return image
+
+@app.route("/deneme", methods=["GET"])
+def deneme():
+    return jsonify({"message": "deneme response"})
     
 @app.route('/yapayzeka', methods=['POST'])
 def yapayzeka():
