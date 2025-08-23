@@ -19,125 +19,150 @@ from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras.preprocessing import image
 from io import BytesIO
 from PIL import Image
-
+import psutil, os
+process = psutil.Process(os.getpid())
 
 
 app = Flask(__name__)
 # Tüm domainlere izin ver, preflight isteklerine otomatik cevap ver
 CORS(app, origins=["https://bitirme-projesi-deploy.netlify.app"])
 
-# def read_tensor_from_image_url(url,
-#                                 input_height=299,
-#                                 input_width=299,
-#                                 input_mean=0,
-#                                 input_std=255):
-#     response = requests.get(url)
-#     image = tf.keras.utils.get_file('image.jpg', url)
-#     image = tf.io.read_file(image)
-#     image = tf.image.decode_jpeg(image, channels = 3)
-#     image = tf.image.resize(image, size=(300, 300))
-#     image = tf.cast(image, dtype= tf.float32)/255
-#     image = tf.expand_dims(image, axis=0)  # Tek bir örneği modelin beklediği şekilde boyutlandırma
-#     print("image:",image)
-#     return image
+
+squeeze_model = None
+
+def get_squeeze_model():
+    global squeeze_model
+    if squeeze_model is None:
+        squeeze_model = load_model("SquezeNet_trained_model_40.h5")
+    return squeeze_model
+
+
+def log_ram(step=""):
+    mem_MB = process.memory_info().rss / 1024**2
+    print(f"[RAM] [{step}] {mem_MB:.2f} MB")
 
 @app.route("/deneme", methods=["GET"])
 def deneme():
     return jsonify({"message": "deneme response"})
     
+
+
+
+
+# @app.route('/yapayzeka', methods=['POST'])
+# def yapayzeka():
+#     print("yapayzeka endpoint called")
+#     request_data = request.json
+#     imageUrl = request_data['imageUrl']
+#     print("imageUrl:",imageUrl)
+        
+#     model = get_squeeze_model()
+
+#     def load_single_image(path):
+
+#         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+#             response = requests.get(path)
+#             temp_file.write(response.content)
+#             temp_file_path = temp_file.name
+
+#         image = tf.io.read_file(temp_file_path)
+#         image = tf.image.decode_jpeg(image, channels=3)
+#         image = tf.image.resize(image, size=(300, 300))
+#         image = tf.cast(image, dtype=tf.float32) / 255
+#         image = tf.expand_dims(image, axis=0)  # Tek bir örneği modelin beklediği şekilde boyutlandırma
+#         print("image:", image)
+#         return image
+
+#     # labelları sil
+#     ########################## TEST AND EVALUATE SINGLE TEST DATA ##############################################
+
+#     def evaluate_single_image(model, image_path):
+#         # Resmin yüklenme süresini hesapla
+#         start_load_time = time.time()
+#         image = load_single_image(image_path) 
+#         load_time = time.time() - start_load_time
+
+#         # Tahmin süresini hesapla
+#         start_prediction_time = time.time()
+#         prediction = model.predict(image)
+#         prediction_time = time.time() - start_prediction_time
+
+#         # Süreleri saniye cinsine ve milisaniye cinsine çevir
+#         load_time_seconds = int(load_time)
+#         load_time_millis = int(load_time * 1000)
+
+#         prediction_time_seconds = int(prediction_time)
+#         prediction_time_millis = int(prediction_time * 1000)
+
+#         # Sonuçları yazdır
+#         print(f"Image Load Time: {load_time_seconds} seconds ({load_time_millis} milliseconds)")
+#         print(f"Prediction Time: {prediction_time_seconds} seconds ({prediction_time_millis} milliseconds)")
+
+#         return prediction, load_time_millis, prediction_time_millis
+
+#     prediction, load_time_millis, prediction_time_millis = evaluate_single_image(model, imageUrl)        
+
+#     # JSON olarak döndür
+#     return jsonify({'prediction': prediction.tolist(), 'loadTime': load_time_millis, 'predictionTime': prediction_time_millis})
+
+
+
 @app.route('/yapayzeka', methods=['POST'])
 def yapayzeka():
     print("yapayzeka endpoint called")
+    log_ram("Request başladı")
+    
     request_data = request.json
     imageUrl = request_data['imageUrl']
     print("imageUrl:",imageUrl)
         
-    model = load_model(r"SquezeNet_trained_model_40.h5")
-    # model = load_model(r"C:\Users\semih\Desktop\bitirme-projesi\yapayzeka\SquezeNet_trained_model_40.h5")
-    # model = load_model(r"yapayzeka\SquezeNet_trained_model_40.h5")
-
+    model = get_squeeze_model()
+    log_ram("Model yüklendi")
 
     def load_single_image(path):
-        # response = requests.get(path)
-        # image = tf.keras.utils.get_file('image.jpg', path)
-        # image = tf.io.read_file(image)
-        # image = tf.image.decode_jpeg(image, channels = 3)
-        # image = tf.image.resize(image, size=(300, 300))
-        # image = tf.cast(image, dtype= tf.float32)/255
-        # image = tf.expand_dims(image, axis=0)  # Tek bir örneği modelin beklediği şekilde boyutlandırma
-        # print("image:",image)
-        # return image
+        log_ram("Resim indirme başlıyor")
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             response = requests.get(path)
             temp_file.write(response.content)
             temp_file_path = temp_file.name
+        log_ram("Resim indirildi")
 
         image = tf.io.read_file(temp_file_path)
         image = tf.image.decode_jpeg(image, channels=3)
         image = tf.image.resize(image, size=(300, 300))
         image = tf.cast(image, dtype=tf.float32) / 255
         image = tf.expand_dims(image, axis=0)  # Tek bir örneği modelin beklediği şekilde boyutlandırma
+        log_ram("Preprocess tamamlandı")
         print("image:", image)
         return image
 
-    # labelları sil
     ########################## TEST AND EVALUATE SINGLE TEST DATA ##############################################
-
-   
-
-
-    # def evaluate_single_image(model, image_path):
-
-    #     # Tek bir test datasının test suresini hesapla
-    #     # start_test_time_one = time.time()
-    #     image_upload_start_time = time.time()
-    #     image = load_single_image(image_path)
-    #     image_upload_end_time = time.time() - image_upload_start_time
-    #     millis_upload_time = int(image_upload_end_time*1000)
-
-
-    #     # //0. indisi kaldır 
-    #     start_test_time_one = time.time()
-    #     # Tahmin yapma
-    #     prediction = model.predict(image)
-    #     test_time_one = time.time() - start_test_time_one
-    #     millis = int(test_time_one * 1000)  # Saniyeyi milisaniyeye çevir
-    #     print(f"Image Prediction Time: {millis} milliseconds, Image Upload Time:{millis_upload_time} milliseconds")
-
-    #     print("prediction:", prediction)
-    #     return prediction, millis, millis_upload_time
-
-    # prediction, millis, millis_upload_time = evaluate_single_image(model, imageUrl)
-
-    # return jsonify({'prediction': prediction.tolist(), 'predictionTime': millis, 'uploadTime':millis_upload_time})
-
     def evaluate_single_image(model, image_path):
-        # Resmin yüklenme süresini hesapla
+        log_ram("evaluate_single_image başladı")
         start_load_time = time.time()
         image = load_single_image(image_path) 
         load_time = time.time() - start_load_time
+        log_ram("load_single_image tamamlandı")
 
-        # Tahmin süresini hesapla
         start_prediction_time = time.time()
         prediction = model.predict(image)
         prediction_time = time.time() - start_prediction_time
+        log_ram("Prediction tamamlandı")
 
-        # Süreleri saniye cinsine ve milisaniye cinsine çevir
         load_time_seconds = int(load_time)
         load_time_millis = int(load_time * 1000)
 
         prediction_time_seconds = int(prediction_time)
         prediction_time_millis = int(prediction_time * 1000)
 
-        # Sonuçları yazdır
         print(f"Image Load Time: {load_time_seconds} seconds ({load_time_millis} milliseconds)")
         print(f"Prediction Time: {prediction_time_seconds} seconds ({prediction_time_millis} milliseconds)")
 
         return prediction, load_time_millis, prediction_time_millis
 
-    prediction, load_time_millis, prediction_time_millis = evaluate_single_image(model, imageUrl)        
+    prediction, load_time_millis, prediction_time_millis = evaluate_single_image(model, imageUrl)
+    log_ram("Request tamamlandı")        
 
-    # JSON olarak döndür
     return jsonify({'prediction': prediction.tolist(), 'loadTime': load_time_millis, 'predictionTime': prediction_time_millis})
 
 
